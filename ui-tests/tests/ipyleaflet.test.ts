@@ -76,3 +76,21 @@ const testCellOutputs = async (
     await page.notebook.close(true);
   }
 };
+
+test.describe("ipyleaflet Visual Regression", () => {
+  test.beforeEach(async ({ page, tmpPath }) => {
+    await page.contents.uploadDirectory(
+      path.resolve(__dirname, "../../notebooks"),
+      tmpPath
+    );
+    await page.filebrowser.openDirectory(tmpPath);
+  });
+
+  test("Light theme: Check ipyleaflet renders", async ({ page, tmpPath }) => {
+    await testCellOutputs(page, tmpPath, "JupyterLab Light");
+  });
+
+  test("Dark theme: Check ipyleaflet renders", async ({ page, tmpPath }) => {
+    await testCellOutputs(page, tmpPath, "JupyterLab Dark");
+  });
+});
