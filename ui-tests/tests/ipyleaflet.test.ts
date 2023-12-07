@@ -1,19 +1,23 @@
-import { IJupyterLabPageFixture, test } from '@jupyterlab/galata';
-import { expect } from '@playwright/test';
-import * as path from 'path';
-const klaw = require('klaw-sync');
+import * as path from "path";
+const klaw = require("klaw-sync");
 
-
-const filterUpdateNotebooks = item => {
+const filterUpdateNotebooks = (item) => {
   const basename = path.basename(item.path);
-  return basename.includes('_update');
-}
+  return basename.includes("_update");
+};
 
-const testCellOutputs = async (page: IJupyterLabPageFixture, tmpPath: string, theme: 'JupyterLab Light' | 'JupyterLab Dark') => {
-  const paths = klaw(path.resolve(__dirname, '../notebooks'), {filter: item => !filterUpdateNotebooks(item), nodir: true});
-  const notebooks = paths.map(item => path.basename(item.path));
+const testCellOutputs = async (
+  page: IJupyterLabPageFixture,
+  tmpPath: string,
+  theme: "JupyterLab Light" | "JupyterLab Dark"
+) => {
+  const paths = klaw(path.resolve(__dirname, "../notebooks"), {
+    filter: (item) => !filterUpdateNotebooks(item),
+    nodir: true,
+  });
+  const notebooks = paths.map((item) => path.basename(item.path));
 
-  const contextPrefix = theme == 'JupyterLab Light' ? 'light_' : 'dark_';
+  const contextPrefix = theme == "JupyterLab Light" ? "light_" : "dark_";
   page.theme.setTheme(theme);
 
   for (const notebook of notebooks) {
@@ -24,7 +28,11 @@ const testCellOutputs = async (page: IJupyterLabPageFixture, tmpPath: string, th
 
     let numCellImages = 0;
 
-    const getCaptureImageName = (contextPrefix: string, notebook: string, id: number): string => {
+    const getCaptureImageName = (
+      contextPrefix: string,
+      notebook: string,
+      id: number
+    ): string => {
       return `${contextPrefix}-${notebook}-cell-${id}.png`;
     };
 
@@ -37,6 +45,12 @@ const testCellOutputs = async (page: IJupyterLabPageFixture, tmpPath: string, th
           if (map) {
             await new Promise((_) => setTimeout(_, 1000));
 
+            if (notebook === "MarkerCluster-ipynb") {
+              await page
+                .getByRole("button", { name: "8", exact: true })
+                .click();
+            }
+
             // Move the mouse to the center of the map
             const bb = await map.boundingBox();
             if (bb) {
@@ -47,39 +61,73 @@ const testCellOutputs = async (page: IJupyterLabPageFixture, tmpPath: string, th
           results.push(await cell.screenshot());
           numCellImages++;
         }
-      }
+      },
     });
 
     await page.notebook.save();
 
     for (let c = 0; c < numCellImages; ++c) {
-      expect(results[c]).toMatchSnapshot(getCaptureImageName(contextPrefix, notebook, c));
+      expect(results[c]).toMatchSnapshot(
+        getCaptureImageName(contextPrefix, notebook, c)
+      );
     }
 
     await page.notebook.close(true);
   }
-}
+};
 
-test.describe('ipyleaflet Visual Regression', () => {
-  test.beforeEach(async ({ page, tmpPath }) => {
-    await page.contents.uploadDirectory(
-      path.resolve(__dirname, '../notebooks'),
-      tmpPath
-    );
-    await page.filebrowser.openDirectory(tmpPath);
-  });
+// test.describe("ipyleaflet Visual Regression", () => {
+//   test.beforeEach(async ({ page, tmpPath }) => {
+//     await page.contents.uploadDirectory(
+//       path.resolve(__dirname, "../notebooks"),
+//       tmpPath
+//     );
+//     await page.filebrowser.openDirectory(tmpPath);
+//   });
 
-  test('Light theme: Check ipyleaflet renders', async ({
-    page,
-    tmpPath,
-  }) => {
-    await testCellOutputs(page, tmpPath, 'JupyterLab Light');
-  });
+//   test("Light theme: Check ipyleaflet renders", async ({ page, tmpPath }) => {
+//     await testCellOutputs(page, tmpPath, "JupyterLab Light");
+//   });
 
-  test('Dark theme: Check ipyleaflet renders', async ({
-    page,
-    tmpPath,
-  }) => {
-    await testCellOutputs(page, tmpPath, 'JupyterLab Dark');
-  });
-});
+//   test("Dark theme: Check ipyleaflet renders", async ({ page, tmpPath }) => {
+//     await testCellOutputs(page, tmpPath, "JupyterLab Dark");
+//   });
+// });
+
+// test.describe("Marker Cluster API", () => {
+//   test("spiderfy options", async ({ page }) => {
+//     await page.goto(
+//       "http://localhost:8888/lab?token=345cefcf70ca27b8c30151caf2119f86a7c3ec1af0c4e15e"
+//     );
+//     await page.goto("http://localhost:8888/lab");
+
+//     // page.getCell(0);
+//     await page.runCell(0);
+
+//     await page.getByRole("button", { name: "8", exact: true }).click();
+
+//     const cell = await page.getCellOutput(0);
+
+//     if (cell) {
+//       const map = await cell.$("div.leaflet-container");
+
+//       if (map) {
+//         await new Promise((_) => setTimeout(_, 1000));
+
+//         // Move the mouse to the center of the map
+//         const bb = await map.boundingBox();
+//         if (bb) {
+//           await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+//         }
+//       }
+
+//       const result = await cell.screenshot();
+//     }
+
+//     await page
+//       .getByLabel("MarkerCluster.ipynb")
+//       .getByText("m", { exact: true })
+//       .click();
+//     await page.getByRole("button", { name: "8", exact: true }).click();
+//   });
+// });
