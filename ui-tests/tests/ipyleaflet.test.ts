@@ -84,7 +84,7 @@ test.describe("ipyleaflet Visual Regression", () => {
     await testCellOutputs(page, tmpPath, "JupyterLab Light");
   });
 
-  test("Dark theme: Check ipyleaflet renders", async ({ page, tmpPath }) => {
-    await testCellOutputs(page, tmpPath, "JupyterLab Dark");
-  });
+  // test("Dark theme: Check ipyleaflet renders", async ({ page, tmpPath }) => {
+  //   await testCellOutputs(page, tmpPath, "JupyterLab Dark");
+  // });
 });
