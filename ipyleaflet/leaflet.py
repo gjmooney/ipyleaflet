@@ -2599,6 +2599,11 @@ class Map(DOMWidget, InteractMixin):
     zoom_control: boolean, default True
     attribution_control: boolean, default True
     zoom_animation_threshold: int, default 4
+    prefer_canvas: boolean, default False
+        If enabled, Paths will be rendered on a Canvas renderer. By default, all Paths are rendered in a SVG renderer.
+    track_resize: boolean, default True
+        If enabled, Map will update itself on browser window resize.
+    ease_linearity: float, default 0.2
     """
 
     _view_name = Unicode("LeafletMapView").tag(sync=True)
@@ -2622,6 +2627,10 @@ class Map(DOMWidget, InteractMixin):
     interpolation = Unicode("bilinear").tag(sync=True, o=True)
     crs = Dict(default_value=projections.EPSG3857).tag(sync=True)
     prefer_canvas = Bool(False).tag(sync=True, o=True)
+    track_resize = Bool(True).tag(sync=True, o=True)
+    ease_linearity = Float(1.0, min=0.0, max=1.0).tag(sync=True, o=True)
+    max_bounds = List(Null).tag(sync=True, o=True)
+    max_bounds_viscosity = Float(0.0, min=0.0, max=1.0).tag(sync=True, o=True)
 
     # Specification of the basemap
     basemap = Union(
@@ -2661,8 +2670,7 @@ class Map(DOMWidget, InteractMixin):
     default_style = InstanceDict(MapStyle).tag(sync=True, **widget_serialization)
     dragging_style = InstanceDict(MapStyle).tag(sync=True, **widget_serialization)
 
-    zoom_control = Bool(True)
-    attribution_control = Bool(True)
+    
 
     @default("dragging_style")
     def _default_dragging_style(self):
