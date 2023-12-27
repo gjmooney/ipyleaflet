@@ -2,54 +2,50 @@
 # Distributed under the terms of the Modified BSD License.
 #
 
-import copy
 import asyncio
+import copy
 import json
-import xyzservices
 from datetime import date, timedelta
 from math import isnan
-from branca.colormap import linear, ColorMap
+
+import xyzservices
+from branca.colormap import ColorMap, linear
 from IPython.display import display
-import warnings
-
 from ipywidgets import (
-    Widget,
-    DOMWidget,
     Box,
-    Color,
     CallbackDispatcher,
-    widget_serialization,
-    interactive,
-    Style,
+    Color,
+    DOMWidget,
     Output,
+    Style,
+    Widget,
+    interactive,
+    widget_serialization,
 )
-
-from ipywidgets.widgets.trait_types import InstanceDict
 from ipywidgets.embed import embed_minimal_html
-
+from ipywidgets.widgets.trait_types import InstanceDict
 from traitlets import (
-    CFloat,
-    Float,
-    Unicode,
-    Int,
-    Tuple,
-    List,
-    Instance,
+    Any,
     Bool,
+    CFloat,
     Dict,
     Enum,
+    Float,
+    Instance,
+    Int,
+    List,
+    TraitError,
+    Tuple,
+    Unicode,
+    Union,
+    default,
     link,
     observe,
-    default,
     validate,
-    TraitError,
-    Union,
-    Any,
 )
+
 from ._version import EXTENSION_VERSION
-
 from .projections import projections
-
 
 def_loc = [0.0, 0.0]
 allowed_cursor = [
@@ -2597,12 +2593,11 @@ class Map(DOMWidget, InteractMixin):
     inertia_max_speed: float, default 1500
         Max speed of the inertial movement, in pixels/second.
     zoom_control: boolean, default True
+        If enabled, automatically adds a Zoom Control to the map.
     attribution_control: boolean, default True
+        If enabled, automatically adds am Attribution Control to the map.
     zoom_animation_threshold: int, default 4
-    prefer_canvas: boolean, default False
-        If enabled, Paths will be rendered on a Canvas renderer. By default, all Paths are rendered in a SVG renderer.
-    track_resize: boolean, default True
-        If enabled, Map will update itself on browser window resize.
+        Whether the map zoom animation is enabled.
     ease_linearity: float, default 0.2
     """
 
@@ -2618,19 +2613,59 @@ class Map(DOMWidget, InteractMixin):
     window_url = Unicode(read_only=True).tag(sync=True)
 
     # Map options
+    # prefer_canvas = Bool(False).tag(sync=True, o=True)
+
+    # Control options
+    attribution_control = Bool(True).tag(sync=True, o=True)
+    zoom_control = Bool(True).tag(sync=True, o=True)
+
+    # Interaction options
+    close_popup_on_click = Bool(True).tag(sync=True, o=True)
+    zoom_snap = CFloat(1).tag(sync=True, o=True)
+    zoom_delta = CFloat(1).tag(sync=True, o=True)
+    # track_resize = Bool(True).tag(sync=True, o=True)
+    box_zoom = Bool(True).tag(sync=True, o=True)
+    double_click_zoom = Bool(True).tag(sync=True, o=True)
+    dragging = Bool(True).tag(sync=True, o=True)
+
+    # Map State options
+    crs = Dict(default_value=projections.EPSG3857).tag(sync=True)
     center = List(def_loc).tag(sync=True, o=True)
     zoom = CFloat(12).tag(sync=True, o=True)
-    max_zoom = CFloat(default_value=None, allow_none=True).tag(sync=True, o=True)
     min_zoom = CFloat(default_value=None, allow_none=True).tag(sync=True, o=True)
-    zoom_delta = CFloat(1).tag(sync=True, o=True)
-    zoom_snap = CFloat(1).tag(sync=True, o=True)
-    interpolation = Unicode("bilinear").tag(sync=True, o=True)
-    crs = Dict(default_value=projections.EPSG3857).tag(sync=True)
-    prefer_canvas = Bool(False).tag(sync=True, o=True)
-    track_resize = Bool(True).tag(sync=True, o=True)
-    ease_linearity = Float(1.0, min=0.0, max=1.0).tag(sync=True, o=True)
-    max_bounds = List(Null).tag(sync=True, o=True)
-    max_bounds_viscosity = Float(0.0, min=0.0, max=1.0).tag(sync=True, o=True)
+    max_zoom = CFloat(default_value=None, allow_none=True).tag(sync=True, o=True)
+    # max_bounds = List(default_value=None, allow_none=True).tag(sync=True, o=True)
+    
+    # Animation options
+    zoom_animation = Bool(True).tag(sync=True, o=True)
+    zoom_animation_threshold = Int(4).tag(sync=True, o=True)
+    fade_animation = Bool(True).tag(sync=True, o=True)
+    marker_zoom_animation = Bool(True).tag(sync=True, o=True)
+
+    # Panning Inertioa options
+    inertia = Bool(True).tag(sync=True, o=True)
+    inertia_deceleration = Int(3000).tag(sync=True, o=True)
+    inertia_max_speed = Int(1500).tag(sync=True, o=True)
+    # inertia_threshold = Int(?, o=True).tag(sync=True)
+    ease_linearity = CFloat(1.0, min=0.0, max=1.0).tag(sync=True, o=True)
+    world_copy_jump = Bool(False).tag(sync=True, o=True)
+    # max_bounds_viscosity = CFloat(0.0, min=0.0, max=1.0).tag(sync=True, o=True)
+
+    # Keyboard navigation options
+    keyboard = Bool(True).tag(sync=True, o=True)
+    keyboard_pan_offset = Int(80).tag(sync=True, o=True)
+    keyboard_zoom_offset = Int(1).tag(sync=True, o=True)
+
+    # Mouse Wheel options
+    scroll_wheel_zoom = Bool(False).tag(sync=True, o=True)
+    # wheel_debounce_time = Int(40).tag(sync=True, o=True)
+    # wheel_px_per_zoom_level = Int(60).tag(sync=True, o=True)
+
+    # Touch Interaction options
+    tap = Bool(True).tag(sync=True, o=True)
+    tap_tolerance = Int(15).tag(sync=True, o=True)
+    touch_zoom = Bool(True).tag(sync=True, o=True)
+    bounce_at_zoom_limits = Bool(True).tag(sync=True, o=True)
 
     # Specification of the basemap
     basemap = Union(
@@ -2640,28 +2675,8 @@ class Map(DOMWidget, InteractMixin):
     modisdate = Unicode((date.today() - timedelta(days=1)).strftime("%Y-%m-%d")).tag(
         sync=True
     )
-    # Interaction options
-    dragging = Bool(True).tag(sync=True, o=True)
-    touch_zoom = Bool(True).tag(sync=True, o=True)
-    scroll_wheel_zoom = Bool(False).tag(sync=True, o=True)
-    double_click_zoom = Bool(True).tag(sync=True, o=True)
-    box_zoom = Bool(True).tag(sync=True, o=True)
-    tap = Bool(True).tag(sync=True, o=True)
-    tap_tolerance = Int(15).tag(sync=True, o=True)
-    world_copy_jump = Bool(False).tag(sync=True, o=True)
-    close_popup_on_click = Bool(True).tag(sync=True, o=True)
-    bounce_at_zoom_limits = Bool(True).tag(sync=True, o=True)
-    keyboard = Bool(True).tag(sync=True, o=True)
-    keyboard_pan_offset = Int(80).tag(sync=True, o=True)
-    keyboard_zoom_offset = Int(1).tag(sync=True, o=True)
-    inertia = Bool(True).tag(sync=True, o=True)
-    inertia_deceleration = Int(3000).tag(sync=True, o=True)
-    inertia_max_speed = Int(1500).tag(sync=True, o=True)
-    # inertia_threshold = Int(?, o=True).tag(sync=True)
-    # fade_animation = Bool(?).tag(sync=True, o=True)
-    # zoom_animation = Bool(?).tag(sync=True, o=True)
-    zoom_animation_threshold = Int(4).tag(sync=True, o=True)
-    # marker_zoom_animation = Bool(?).tag(sync=True, o=True)
+
+    interpolation = Unicode("bilinear").tag(sync=True, o=True)
     fullscreen = Bool(False).tag(sync=True, o=True)
 
     options = List(trait=Unicode()).tag(sync=True)
@@ -2671,7 +2686,6 @@ class Map(DOMWidget, InteractMixin):
     dragging_style = InstanceDict(MapStyle).tag(sync=True, **widget_serialization)
 
     
-
     @default("dragging_style")
     def _default_dragging_style(self):
         return {"cursor": "move"}
