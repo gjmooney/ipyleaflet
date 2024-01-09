@@ -633,6 +633,42 @@ class Popup(UILayer):
         self.send({"msg": "close"})
 
 
+class Tooltip(UILayer):
+    """Tooltip class.
+
+    Tooltip element that can be placed on the map.
+
+    Attributes
+    ----------
+    location: tuple, default (0, 0)
+        The tuple containing the latitude/longitude of the tooltip.
+    child: object, default None
+        Child widget that the tooltip will contain.
+    offset: tuple, default (0, 7)
+        The offset of the tooltip position.
+    direction: string, default "auto"
+        Direction where to open the tooltip. Possible values are: right, left, top, bottom, center, auto. Auto will dynamically switch between right and left according to the tooltip position on the map.
+    permanent: boolean, default False
+        When set to False, Tooltip will close on mouse click 
+    opacity: float, default 0.9
+        Opacity of the tooltip.
+    """
+
+    _view_name = Unicode("LeafletTooltipView").tag(sync=True)
+    _model_name = Unicode("LeafletTooltipModel").tag(sync=True)
+
+    location = List(def_loc).tag(sync=True)
+    child = Instance(DOMWidget, allow_none=True, default_value=None).tag(
+        sync=True, **widget_serialization
+    )
+
+    # Options
+    direction = Unicode("auto").tag(sync=True, o=True)
+    offset = List([0, 0]).tag(sync=True, o=True)
+    permanent = Bool(False).tag(sync=True, o=True)
+    opacity = CFloat(0.9).tag(sync=True, o=True)
+
+
 class RasterLayer(Layer):
     """Abstract RasterLayer class.
 
