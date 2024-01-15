@@ -563,18 +563,13 @@ class WidgetMarker(Marker):
     -----------
     child : DOMWidget
         The child widget to be displayed as the marker.
-
-    Attributes:
-    -----------
-    icon : None
-        The icon associated with the marker.
     """
 
     _view_name = Unicode('LeafletWidgetMarkerView').tag(sync=True)
     _model_name = Unicode('LeafletWidgetMarkerModel').tag(sync=True)
 
     child = Instance(DOMWidget).tag(sync=True, **widget_serialization)
-    icon = None
+    # icon = None
 
     def __init__(self, child, **kwargs):
         super(WidgetMarker, self).__init__(child=child, **kwargs)
