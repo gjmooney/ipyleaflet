@@ -2,8 +2,8 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { WidgetView, unpack_models } from '@jupyter-widgets/base';
-import L from '../leaflet.js';
-import { LeafletIconModel, LeafletIconView } from './Icon.js';
+import L from '../leaflet';
+import { LeafletIconModel, LeafletIconView } from './Icon';
 import { LeafletMarkerModel, LeafletMarkerView } from './Marker';
 
 export class LeafletWidgetMarkerModel extends LeafletMarkerModel {
@@ -23,11 +23,10 @@ LeafletWidgetMarkerModel.serializers = {
 };
 
 export class LeafletWidgetMarkerView extends LeafletMarkerView {
-  child_promise: Promise<any>;
-
-  initialize(parameters: WidgetView.IInitializeParameters<LeafletMarkerModel>) {
+  initialize(
+    parameters: WidgetView.IInitializeParameters<LeafletWidgetMarkerModel>
+  ) {
     super.initialize(parameters);
-    this.child_promise = Promise.resolve();
   }
 
   create_obj() {
@@ -50,19 +49,17 @@ export class LeafletWidgetMarkerView extends LeafletMarkerView {
       this.icon.remove();
     }
     if (value) {
-      this.icon_promise = this.icon_promise.then(() => {
-        return this.create_child_view<LeafletIconView>(value).then((view) => {
-          const container = document.createElement('div');
-          container.appendChild(view.el);
-          container.classList.add('leaflet-widgetcontrol');
-          container.style.top = '50%';
-          container.style.left = '50%';
-          container.style.transform = 'translate(-50%, -50%)';
-          container.style.position = 'absolute';
-
-          this.obj.setIcon(L.divIcon({ html: container }));
-          this.icon = view;
-        });
+      this.icon_promise = this.icon_promise.then(async () => {
+        const view = await this.create_child_view<LeafletIconView>(value);
+        const container = document.createElement('div');
+        container.appendChild(view.el);
+        container.classList.add('leaflet-widgetcontrol');
+        container.style.top = '50%';
+        container.style.left = '50%';
+        container.style.transform = 'translate(-50%, -50%)';
+        container.style.position = 'absolute';
+        this.obj.setIcon(L.divIcon({ html: container }));
+        this.icon = view;
       });
     }
   }
