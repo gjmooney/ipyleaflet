@@ -1,28 +1,31 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-const widgets = require('@jupyter-widgets/base');
-const L = require('../leaflet.js');
-const marker = require('./Marker.js');
+import { WidgetView, unpack_models } from '@jupyter-widgets/base';
+import L from '../leaflet.js';
+import { LeafletIconModel, LeafletIconView } from './Icon.js';
+import { LeafletMarkerModel, LeafletMarkerView } from './Marker';
 
-export class LeafletWidgetMarkerModel extends marker.LeafletMarkerModel {
+export class LeafletWidgetMarkerModel extends LeafletMarkerModel {
   defaults() {
     return {
       ...super.defaults(),
       _view_name: 'LeafletWidgetMarkerView',
       _model_name: 'LeafletWidgetMarkerModel',
-      child: null
+      child: null,
     };
   }
 }
 
 LeafletWidgetMarkerModel.serializers = {
-  ...marker.LeafletMarkerModel.serializers,
-  child: { deserialize: widgets.unpack_models }
+  ...LeafletMarkerModel.serializers,
+  child: { deserialize: unpack_models },
 };
 
-export class LeafletWidgetMarkerView extends marker.LeafletMarkerView {
-  initialize(parameters) {
+export class LeafletWidgetMarkerView extends LeafletMarkerView {
+  child_promise: Promise<any>;
+
+  initialize(parameters: WidgetView.IInitializeParameters<LeafletMarkerModel>) {
     super.initialize(parameters);
     this.child_promise = Promise.resolve();
   }
@@ -42,13 +45,13 @@ export class LeafletWidgetMarkerView extends marker.LeafletMarkerView {
     });
   }
 
-  set_icon(value) {
+  set_icon(value: LeafletIconModel) {
     if (this.icon) {
       this.icon.remove();
     }
     if (value) {
       this.icon_promise = this.icon_promise.then(() => {
-        return this.create_child_view(value).then(view => {
+        return this.create_child_view<LeafletIconView>(value).then((view) => {
           const container = document.createElement('div');
           container.appendChild(view.el);
           container.classList.add('leaflet-widgetcontrol');
@@ -57,7 +60,7 @@ export class LeafletWidgetMarkerView extends marker.LeafletMarkerView {
           container.style.transform = 'translate(-50%, -50%)';
           container.style.position = 'absolute';
 
-          this.obj.setIcon(L.divIcon({html: container}));
+          this.obj.setIcon(L.divIcon({ html: container }));
           this.icon = view;
         });
       });
@@ -66,13 +69,8 @@ export class LeafletWidgetMarkerView extends marker.LeafletMarkerView {
 
   model_events() {
     super.model_events();
-    this.listenTo(
-      this.model,
-      'change:child',
-      () => {
-        this.set_icon(this.model.get('child'));
-      },
-      this
-    );
+    this.listenTo(this.model, 'change:child', () => {
+      this.set_icon(this.model.get('child'));
+    });
   }
 }
