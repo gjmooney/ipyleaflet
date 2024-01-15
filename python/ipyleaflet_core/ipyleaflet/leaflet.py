@@ -555,6 +555,21 @@ class Marker(UILayer):
 
 
 class WidgetMarker(Marker):
+    """
+    WidgetMarker class.
+    Add any Jupyter widget as a marker on the map.
+
+    Parameters:
+    -----------
+    child : DOMWidget
+        The child widget to be displayed as the marker.
+
+    Attributes:
+    -----------
+    icon : None
+        The icon associated with the marker.
+    """
+
     _view_name = Unicode('LeafletWidgetMarkerView').tag(sync=True)
     _model_name = Unicode('LeafletWidgetMarkerModel').tag(sync=True)
 
