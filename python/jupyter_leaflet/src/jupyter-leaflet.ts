@@ -32,6 +32,7 @@ export * from './layers/VectorTileLayer';
 export * from './layers/Velocity';
 export * from './layers/VideoOverlay';
 export * from './layers/WMSLayer';
+export * from './layers/WidgetMarker';
 
 //Controls
 export * from './controls/AttributionControl';
